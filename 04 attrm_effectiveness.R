@@ -1,10 +1,10 @@
 
 ################################################################################
-# "Temporal changes in temperature-related mortality in Spain and effect of 
-#        the implementation of a Heat Health Prevention Plan"
+# "Impact of ambient temperatures on mortality in Spain (1993-2013)"
 #   
+#
 #   ISGlobal  
-#   June 2018
+#   April 2017
 #   
 #
 ################################################################################
@@ -15,10 +15,13 @@
 ################################################################################
 
 # LOAD THE FUNCTION FOR COMPUTING THE ATTRIBUTABLE RISK MEASURES
+setwd("T:\\Xavi\\ETEC\\Erica\\mortality\\temperature_mortality-master")
 source("attrdl_effectiveness.R")
 
-# open this file, result of running "blups per attrm.R"
-load(file="blupP.RData")
+# open this file, reulst of running "07 blups per attrm.R"
+
+#load(file="T:\\Xavi\\ETEC\\Erica\\mortality\\separate models\\blupP.RData")
+load(file="H:\\doctorat\\Mortality\\02_Stata\\01_do\\R code\\Definitiu\\blupP.RData")
 
 library(mgcv)
 
@@ -272,7 +275,7 @@ antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
 
 
 ################################################################################
-# TOTAL DEATHS
+# TOTAL INJURIES
 
 # BY COUNTRY. OVERALL
 totdeathtot <- sum(totdeath_2)
@@ -311,9 +314,8 @@ af_differences[,7] <- afcity[,c(14)]-afcity[,c(7)]
 
 
 save(af_differences,ancity,ancitylow,ancityhigh,afcity,afcitylow,afcityhigh,
-     aftot,aftothigh,aftotlow, afcity,afcitylow,afcityhigh,file="attrfraction_city_differences.csv")
-load(file="attrfraction_city_differences.csv")
-
+	aftot,aftothigh,aftotlow, afcity,afcitylow,afcityhigh,file="T:\\Xavi\\ETEC\\Erica\\mortality\\separate models\\attrfraction_city_differences.csv")
+load(file="T:\\Xavi\\ETEC\\Erica\\mortality\\separate models\\attrfraction_city_differences.csv")
 
 > row.names(af_differences)
  [1] "Alava"                  "Albacete"               "Alicante"              
@@ -405,7 +407,7 @@ af_differences.df[af_differences.df$ccaa==17,9:38]=matrix(rep(c(rep(1,5),rep(1,5
 # check
 aggregate(af_differences.df[,9:38],by=list(ccaa=af_differences.df$ccaa),mean)
 
-# We add 5 fot include those in 2.
+# I add 5 fot include those in 2.
 apply(af_differences.df[,9:38],1,sum) + 5
 
 se.p2.prov=(afcityhigh[,14]-afcity[,14])/1.96
@@ -431,6 +433,17 @@ best.subset.by.adjr2
 
 coef(best.subset,5)
 
+summary(lm(extreme.heat~ p3.4 +p4.1+ p5.2+ p1.5+ p6.2,data=dat))
+summary(lm(extreme.heat~ p3.4 + p5.2+ p1.5+ p6.2,data=dat))
+summary(lm(extreme.heat~ p3.4 + p5.2+  p6.2,data=dat))
+summary(lm(extreme.heat~ p5.2+  p6.2,data=dat))
+summary(lm(extreme.heat~ p5.2,data=dat))
+
+library(rpart)
+mrpart=rpart(extreme.heat~.,data=dat,method="anova")
+summary(mrpart)
+plot(mrpart)
+
 a=cor(dat)
 a[1,]
 
@@ -448,8 +461,9 @@ abline(lm(af_differences.df$extreme.heat~af_differences.df$index))
 
 
 ### Add differences by hw_plan
-## obtained from code_plan_new.R
-load(file="af_cities_plan.RData")
+## obtained from \separate models\heatwaves\erica\code_plan_new.R
+
+load(file="t:\\xavi\\etec\\erica\\mortality\\separate models\\heatwaves\\erica\\af_cities_plan.RData")
 
 af.diff.plan=afcity[,4]-afcity[,3]
 se.p2.plan=(afcityhigh[,4]-afcity[,4])/1.96
@@ -464,8 +478,6 @@ af_differences.df$prov=row.names(af_differences.df)
 af.diff.df.all=merge(af_differences.df,df.diff.plan,by="row.names",all.x=T)
 
 cov.prov <- read.csv("t:\\xavi\\etec\\erica\\mortality\\separate models\\attrfraction_metaregression.csv",sep=";")
-cov.prov <- read.csv("H:/doctorat/Mortality/02_Stata/04_results/Tables/attrfraction_metaregression.csv",sep=";")
-
 cov.prov=cov.prov[,c(1,8:21)]
 cov.prov$prov=as.character(cov.prov$provcode)
  
@@ -473,7 +485,6 @@ cov.prov$prov=as.character(cov.prov$provcode)
 af.dif.cov=merge(af.diff.df.all,cov.prov,by="prov",all.x=T)
 
 load("T:\\xavi\\etec\\erica\\mortality\\tempDEATHS.Rdata")
-load("H:\\doctorat\\Mortality\\02_Stata\\03_data\\tempDEATHS.Rdata")
 aa=aggregate(tempDEATHS$tempmax_compl,by=list(province=tempDEATHS$province),mean,na.rm=T)
 names(aa)[2]="avg.tempmax"
 aa$prov <- c("Alava", "Albacete", "Alicante", "Almeria", "Avila", 
@@ -547,6 +558,10 @@ res.extreme.heat.cov <- rma(yi=extreme.heat, vi=var.diff, mods = ~ index + Prome
 summary(res.extreme.heat.cov)
 
 # Index adjusted for others:
+res.extreme.heat.cov <- rma(yi=extreme.heat, vi=var.diff, mods = ~ index + prov_.aircond_2001, data=af.dif.cov)
+summary(res.extreme.heat.cov)
+
+# Index adjusted for others:
 res.extreme.heat.cov <- rma(yi=extreme.heat, vi=var.diff, mods = ~ index + avg.tempmax, data=af.dif.cov)
 summary(res.extreme.heat.cov)
 
@@ -582,7 +597,7 @@ cor(af.dif.cov$index,af.dif.cov$PromedioDeind_vulnerability,use="complete.obs")
 
 
 ##########################
-# Plots for Extreme heat   #
+# Plots for Extre heat   #
 ##########################
 
 par(mfrow=c(1,2))
@@ -669,6 +684,8 @@ summary(res.hw.plan.cov)
 res.hw.plan.cov <- rma(yi=af.diff.plan, vi=var.diff.plan, mods = ~ index+prov_.aircond_2001, data=af.dif.cov)
 summary(res.hw.plan.cov)
 
+res.hw.plan.cov <- rma(yi=af.diff.plan, vi=var.diff.plan, mods = ~ index+PromedioDeind_vulnerability, data=af.dif.cov)
+summary(res.hw.plan.cov)
 
 plot(af_differences.df$index,af_differences.df$glob,xlab="Index",ylab="")
 plot(af_differences.df$index,af_differences.df$heat,xlab="Index",ylab="")
